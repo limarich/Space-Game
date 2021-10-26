@@ -1,4 +1,4 @@
-import pygame,sys,os
+import pygame,sys,os,random
 #carrega a pasta do jogo
 game_folder = os.path.dirname(__file__)
 img_folder = os.path.join(game_folder,'img')
@@ -14,7 +14,7 @@ HEIGHT = 600
 def load_img(name, width = 50,height=50):
     return pygame.transform.scale(pygame.image.load(os.path.join(img_folder, name)).convert(), (width,height))
 class Ship(pygame.sprite.Sprite):
-    def __init__(self,pos_x, pos_y, speed=[30,30]):
+    def __init__(self, speed=[30,30]):
         pygame.sprite.Sprite.__init__(self)
         self.image = load_img('player.png',100)
         self.image.set_colorkey(WHITE)
@@ -23,7 +23,7 @@ class Ship(pygame.sprite.Sprite):
         self.width = self.rect.width
         self.radius =  self.rect.width*.75/2#75%
         # pygame.draw.circle(self.image, RED, self.rect.center, self.radius)
-        self.rect.x, self.rect.y = pos_x, pos_y-self.height
+        self.rect.x, self.rect.y = WIDTH/2, HEIGHT-self.height
         self.speed = speed
         self.lifes = 3
     def update(self):
@@ -40,38 +40,40 @@ class Ship(pygame.sprite.Sprite):
         print(f"dano-> suas vidas{self.lifes}")
         self.rect.x, self.rect.y = WIDTH/2, HEIGHT-self.height
 class Enemy(pygame.sprite.Sprite):
-    def __init__(self,width,height, color, pos_x, pos_y, speed=[10,5]):
+    def __init__(self):
         pygame.sprite.Sprite.__init__(self)
         self.image = load_img('alien.png')
         self.image.set_colorkey(BLACK)
         self.rect = self.image.get_rect()
-        self.width = self.rect.width
-        self.height = self.rect.height
         self.radius = 25
         # pygame.draw.circle(self.image, RED, self.rect.center, self.radius)
-        self.rect.x, self.rect.y = pos_x, pos_y
-        self.speed = speed
-    def update(self):
-        self.rect.x += self.speed[0]
-        if self.rect.x > WIDTH:
-            self.rect.x = WIDTH-self.width
-            self.speed[0]*=-1
-        if self.rect.x < 0:
-            self.speed[0]*=-1
-            self.rect.x = self.width
+        self.rect.x, self.rect.y = random.randrange(0, WIDTH - self.rect.width),  random.randrange(-200,-40)
+        self.speedx = random.randrange(-3,3)
+        self.speedy = random.randrange(1,8)
+    def update(self): 
+        self.rect.x +=self.speedx
+        self.rect.y += self.speedy
+
+        if self.rect.top > HEIGHT + 10 or self.rect.left < 0 or self.rect.right > WIDTH:
+            self.rect.x = random.randrange(WIDTH - self.rect.width)
+            self.rect.y = random.randrange(-100, -40)
+            self.speedy = random.randrange(1, 8)
 class Game():
-    def __init__(self):
+    def __init__(self, n_enemies=10):
         self.screen = pygame.display.set_mode((WIDTH,HEIGHT),pygame.RESIZABLE)
         pygame.display.set_caption("Space Game")
         pygame.display.set_icon(pygame.image.load(os.path.join(img_folder, "planet01b.png")))
         self.clock = pygame.time.Clock()
     #grupos de sprites 
         self.all_sprites = pygame.sprite.Group()
-    #instancia do jogo
-        self.ship = Ship(WIDTH/2, HEIGHT)
-        self.enemy = Enemy(50,50,RED, (WIDTH/2)-50, 0)
+        self.enemies = pygame.sprite.Group()
+
+        self.ship = Ship()
         self.all_sprites.add(self.ship)
-        self.all_sprites.add(self.enemy)
+        for i in range(n_enemies):
+            e = Enemy()
+            self.all_sprites.add(e)
+            self.enemies.add(e)
 
         self.background = load_img("bg2.png", WIDTH, HEIGHT)
     def run(self):
@@ -96,8 +98,9 @@ class Game():
             pygame.display.update() #flip
     def collision(self):
         #colisão corpo a corpo inimigo-heroi
-            if pygame.sprite.groupcollide(pygame.sprite.GroupSingle(self.ship), pygame.sprite.GroupSingle(self.enemy), False, False):
-                self.ship.damage()
+        # for enemy in self.enemies:
+        if pygame.sprite.spritecollide(self.ship, self.enemies, False,False):
+            self.ship.damage()
 if __name__ ==  '__main__':
     game = Game()
     game.run()
