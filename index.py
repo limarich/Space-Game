@@ -35,6 +35,8 @@ class Ship(pygame.sprite.Sprite):
             self.rect.y -= self.speed[1]
         if pygame.key.get_pressed()[pygame.K_s] and self.rect.y +self.speed[1]+self.height < HEIGHT:
             self.rect.y += self.speed[1]
+    def shoot(self):
+        return Bullet(self.rect.centerx,self.rect.top)
     def damage(self):
         self.lifes -= 1
         print(f"dano-> suas vidas{self.lifes}")
@@ -58,6 +60,19 @@ class Enemy(pygame.sprite.Sprite):
             self.rect.x = random.randrange(WIDTH - self.rect.width)
             self.rect.y = random.randrange(-100, -40)
             self.speedy = random.randrange(1, 8)
+class Bullet(pygame.sprite.Sprite):
+    def __init__(self,x,y):
+         pygame.sprite.Sprite.__init__(self)
+         self.image = load_img("planet02.png",10,30)
+         self.image.set_colorkey(WHITE)
+         self.rect = self.image.get_rect()
+         self.speedy = -10
+         self.rect.bottom = y
+         self.rect.centerx = x
+    def update(self):
+        self.rect.y += self.speedy
+        if self.rect.bottom < 0:
+            self.kill()
 class Game():
     def __init__(self, n_enemies=10):
         self.screen = pygame.display.set_mode((WIDTH,HEIGHT),pygame.RESIZABLE)
@@ -67,6 +82,7 @@ class Game():
     #grupos de sprites 
         self.all_sprites = pygame.sprite.Group()
         self.enemies = pygame.sprite.Group()
+        self.bullets = pygame.sprite.Group()
 
         self.ship = Ship()
         self.all_sprites.add(self.ship)
@@ -87,7 +103,11 @@ class Game():
                     self.screen = pygame.display.set_mode(event.size,pygame.RESIZABLE)
                     WIDTH, HEIGHT = event.size
                     self.background = load_img("bg2.png", WIDTH, HEIGHT)
-                    
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        shoot = self.ship.shoot()
+                        self.all_sprites.add(shoot)
+                        self.bullets.add(shoot)
             #atualiza os sprites
 
             self.all_sprites.update()
@@ -101,6 +121,11 @@ class Game():
         # for enemy in self.enemies:
         if pygame.sprite.spritecollide(self.ship, self.enemies, False,False):
             self.ship.damage()
+        hits = pygame.sprite.groupcollide(self.enemies, self.bullets,True, True)
+        for hit in hits:
+            e = Enemy()
+            self.all_sprites.add(e)
+            self.enemies.add(e)
 if __name__ ==  '__main__':
     game = Game()
     game.run()
