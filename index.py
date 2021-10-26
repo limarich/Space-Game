@@ -1,7 +1,9 @@
 import pygame,sys,os,random
-#carrega a pasta do jogo
+"""carrega a pasta do jogo"""
 game_folder = os.path.dirname(__file__)
 img_folder = os.path.join(game_folder,'img')
+
+"""Variáveis úteis"""
 WHITE = (255, 255, 255)
 RED   = (255, 0, 0)
 BLACK = (0, 0, 0)
@@ -12,8 +14,14 @@ FPS = 27
 WIDTH = 800
 HEIGHT = 600
 def load_img(name, width = 50,height=50):
+    """
+    Função que carrega as imagens presentes dentro da pasta do jogo 
+    """
     return pygame.transform.scale(pygame.image.load(os.path.join(img_folder, name)).convert(), (width,height))
 class Ship(pygame.sprite.Sprite):
+    """
+    Nave do jogador
+    """
     def __init__(self, speed=[30,30]):
         pygame.sprite.Sprite.__init__(self)
         self.image = load_img('player.png',100)
@@ -27,6 +35,9 @@ class Ship(pygame.sprite.Sprite):
         self.speed = speed
         self.lifes = 3
     def update(self):
+        """
+        Atualização do jogador
+        """
         if pygame.key.get_pressed()[pygame.K_d] and self.rect.x+self.speed[0]+self.width < WIDTH:
             self.rect.x += self.speed[0]
         if pygame.key.get_pressed()[pygame.K_a] and self.rect.x -self.speed[0]+self.width > self.width:
@@ -36,12 +47,19 @@ class Ship(pygame.sprite.Sprite):
         if pygame.key.get_pressed()[pygame.K_s] and self.rect.y +self.speed[1]+self.height < HEIGHT:
             self.rect.y += self.speed[1]
     def shoot(self):
+        """
+        Instancia de tiros do jogador
+        """
         return Bullet(self.rect.centerx,self.rect.top)
     def damage(self):
+        """
+        Ativa as ações de dano do jogador
+        """
         self.lifes -= 1
         print(f"dano-> suas vidas{self.lifes}")
         self.rect.x, self.rect.y = WIDTH/2, HEIGHT-self.height
 class Enemy(pygame.sprite.Sprite):
+    """Nave Inimiga padrão"""
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
         self.image = load_img('alien.png')
@@ -52,7 +70,8 @@ class Enemy(pygame.sprite.Sprite):
         self.rect.x, self.rect.y = random.randrange(0, WIDTH - self.rect.width),  random.randrange(-200,-40)
         self.speedx = random.randrange(-3,3)
         self.speedy = random.randrange(1,8)
-    def update(self): 
+    def update(self):
+        """Atualização da nave inimiga""" 
         self.rect.x +=self.speedx
         self.rect.y += self.speedy
 
@@ -61,6 +80,9 @@ class Enemy(pygame.sprite.Sprite):
             self.rect.y = random.randrange(-100, -40)
             self.speedy = random.randrange(1, 8)
 class Bullet(pygame.sprite.Sprite):
+    """
+    Classe do tiro das naves 
+    """
     def __init__(self,x,y):
          pygame.sprite.Sprite.__init__(self)
          self.image = load_img("planet02.png",10,30)
@@ -70,6 +92,7 @@ class Bullet(pygame.sprite.Sprite):
          self.rect.bottom = y
          self.rect.centerx = x
     def update(self):
+        "Atualização dos tiros"
         self.rect.y += self.speedy
         if self.rect.bottom < 0:
             self.kill()
