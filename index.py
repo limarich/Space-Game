@@ -9,6 +9,7 @@ game_folder = os.path.dirname(__file__)
 game_font = os.path.join(game_folder,'fonts') + '\stocky.ttf'
 img_folder = os.path.join(game_folder,'img')
 snd_dir = os.path.join(game_folder,'sounds')
+
 """Variáveis úteis"""
 WHITE = (255, 255, 255)
 RED   = (255, 0, 0)
@@ -28,6 +29,18 @@ Bomb_sound =  load_sound("Bomb.wav")
 expl_sound = [load_sound("Explosion1.wav"), load_sound("Explosion2.wav")]
 hurt_sound = load_sound("Hit_Hurt.wav")
 
+#alguns recursos do jogo
+explosion_anim = {}
+explosion_anim['lg'] = []
+explosion_anim['sm'] = []
+for i in range(9):
+    filename = 'regularExplosion0{}.png'.format(i)
+    img = pygame.image.load(os.path.join(img_folder, filename))
+    img.set_colorkey(BLACK)
+    img_lg = pygame.transform.scale(img, (75, 75))
+    explosion_anim['lg'].append(img_lg)
+    img_sm = pygame.transform.scale(img, (32, 32))
+    explosion_anim['sm'].append(img_sm)
 
 def load_img(name, width = 50,height=50):
     """
@@ -51,12 +64,12 @@ class Ship(pygame.sprite.Sprite):
         self.speed = speed
         self.lifes = 3
         self.missiles = 3
-        self.last_update = pygame.time.get_ticks()
+        self.shoot_delay = 250
+        self.last_shot = pygame.time.get_ticks()
     def update(self):
         """
         Atualização do jogador
         """
-        self.last_update = pygame.time.get_ticks()
         if pygame.key.get_pressed()[pygame.K_d] and self.rect.x+self.speed[0]+self.width < WIDTH:
             self.rect.x += self.speed[0]
         if pygame.key.get_pressed()[pygame.K_a] and self.rect.x -self.speed[0]+self.width > self.width:
@@ -141,6 +154,29 @@ class Bomb(pygame.sprite.Sprite):
         self.rect.y += self.speedy
         if self.rect.bottom < 0:
             self.kill()
+class Explosion(pygame.sprite.Sprite):
+    def __init__(self, center, size):
+        pygame.sprite.Sprite.__init__(self)
+        self.size = size
+        self.image = explosion_anim[self.size][0]
+        self.rect = self.image.get_rect()
+        self.rect.center = center
+        self.frame = 0
+        self.last_update = pygame.time.get_ticks()
+        self.frame_rate = 50
+
+    def update(self):
+        now = pygame.time.get_ticks()
+        if now - self.last_update > self.frame_rate:
+            self.last_update = now
+            self.frame += 1
+            if self.frame == len(explosion_anim[self.size]):
+                self.kill()
+            else:
+                center = self.rect.center
+                self.image = explosion_anim[self.size][self.frame]
+                self.rect = self.image.get_rect()
+                self.rect.center = center
 class Game():
     pygame.mixer.music.load(os.path.join(snd_dir, 'tgfcoder-FrozenJam-SeamlessLoop.mp3'))
     pygame.mixer.music.play(loops=-1)
@@ -158,14 +194,15 @@ class Game():
         self.all_sprites.add(self.ship)
         self.score = 0
         self.end = 0
+        self.difficult = 0
         for i in range(n_enemies):
             e = Enemy()
             self.all_sprites.add(e)
             self.enemies.add(e)
         self.background = load_img("bg.png", WIDTH, HEIGHT)
     def run(self):
-        shot_speed = 0
         while not self.end:
+            now = pygame.time.get_ticks()
             self.clock.tick(FPS)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -182,14 +219,17 @@ class Game():
                         for enemy in self.enemies:
                             self.score += 50
                             enemy.kill()
-                        for i in range(self.n_enemies): #respanw
+                        for i in range(self.n_enemies + (self.difficult//1000)): #respanw
                             self.respawn_enemy()
             
-            #atualiza os sprites
-            if shot_speed % 10 == 0:
+            #cria um novo tiro 
+            if now - self.ship.last_shot > self.ship.shoot_delay:
+                self.ship.last_shot = now
                 shoot = self.ship.shoot()
                 self.all_sprites.add(shoot)
                 self.bullets.add(shoot)
+                self.difficult += 1
+                
 
 
             self.all_sprites.update()
@@ -199,7 +239,6 @@ class Game():
             self.draw_text(f"score:{self.score}", 20, WIDTH/2, 10)
             self.draw_text(f"Vidas:{self.ship.lifes}", 20, 50, 10)
             self.draw_text(f"Misseis:{self.ship.missiles}", 20, 60, 40)
-            shot_speed+=1
             pygame.display.update() #flip
             self.game_over()
     def game_over(self):
@@ -217,9 +256,13 @@ class Game():
         # for enemy in self.enemies:
         if pygame.sprite.spritecollide(self.ship, self.enemies, False,False):
             self.ship.damage(self)
+            expl = Explosion(self.ship.rect.center, 'sm')
+            self.all_sprites.add(expl)
             hurt_sound.play()
         hits = pygame.sprite.groupcollide(self.enemies, self.bullets,True, True)
         for hit in hits:
+            expl = Explosion(hit.rect.center, 'lg')
+            self.all_sprites.add(expl)
             random.choice(expl_sound).play()
             self.score += 50
             self.respawn_enemy()
