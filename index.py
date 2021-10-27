@@ -1,8 +1,10 @@
 import pygame,sys,os,random
-"""carrega a pasta do jogo"""
-game_folder = os.path.dirname(__file__)
-img_folder = os.path.join(game_folder,'img')
 
+from pygame.constants import USEREVENT
+"""carrega a pasta do jogo + arquivos"""
+game_folder = os.path.dirname(__file__)
+game_font = os.path.join(game_folder,'fonts') + '\stocky.ttf'
+img_folder = os.path.join(game_folder,'img')
 """Variáveis úteis"""
 WHITE = (255, 255, 255)
 RED   = (255, 0, 0)
@@ -13,6 +15,7 @@ GOLD = (255, 215, 0)
 FPS = 27
 WIDTH = 800
 HEIGHT = 600
+
 def load_img(name, width = 50,height=50):
     """
     Função que carrega as imagens presentes dentro da pasta do jogo 
@@ -24,8 +27,8 @@ class Ship(pygame.sprite.Sprite):
     """
     def __init__(self, speed=[30,30]):
         pygame.sprite.Sprite.__init__(self)
-        self.image = load_img('player.png',100)
-        self.image.set_colorkey(WHITE)
+        self.image = load_img('player2.png',50,30)
+        self.image.set_colorkey(BLACK)
         self.rect = self.image.get_rect()
         self.height = self.rect.height
         self.width = self.rect.width
@@ -34,10 +37,12 @@ class Ship(pygame.sprite.Sprite):
         self.rect.x, self.rect.y = WIDTH/2, HEIGHT-self.height
         self.speed = speed
         self.lifes = 3
+        self.last_update = pygame.time.get_ticks()
     def update(self):
         """
         Atualização do jogador
         """
+        self.last_update = pygame.time.get_ticks()
         if pygame.key.get_pressed()[pygame.K_d] and self.rect.x+self.speed[0]+self.width < WIDTH:
             self.rect.x += self.speed[0]
         if pygame.key.get_pressed()[pygame.K_a] and self.rect.x -self.speed[0]+self.width > self.width:
@@ -51,13 +56,21 @@ class Ship(pygame.sprite.Sprite):
         Instancia de tiros do jogador
         """
         return Bullet(self.rect.centerx,self.rect.top)
-    def damage(self):
+    def damage(self, game):
         """
         Ativa as ações de dano do jogador
         """
         self.lifes -= 1
         print(f"dano-> suas vidas{self.lifes}")
+        if self.lifes <= 0:
+            self.kill()
+            game.end =  1
         self.rect.x, self.rect.y = WIDTH/2, HEIGHT-self.height
+    def bomb(self):
+        """
+        cria animação da bomba e desconta o total de bombas do player
+        """
+        return Bomb(self.rect.centerx,self.rect.top)
 class Enemy(pygame.sprite.Sprite):
     """Nave Inimiga padrão"""
     def __init__(self):
@@ -85,7 +98,7 @@ class Bullet(pygame.sprite.Sprite):
     """
     def __init__(self,x,y):
          pygame.sprite.Sprite.__init__(self)
-         self.image = load_img("planet02.png",10,30)
+         self.image = load_img("bullet.png",10,30)
          self.image.set_colorkey(WHITE)
          self.rect = self.image.get_rect()
          self.speedy = -10
@@ -96,27 +109,46 @@ class Bullet(pygame.sprite.Sprite):
         self.rect.y += self.speedy
         if self.rect.bottom < 0:
             self.kill()
+class Bomb(pygame.sprite.Sprite):
+    """
+    Classe da bomba do player
+    """
+    def __init__(self,x,y):
+         pygame.sprite.Sprite.__init__(self)
+         self.image = pygame.transform.rotate(load_img("missile_half.png"),90)
+         self.image.set_colorkey(WHITE)
+         self.rect = self.image.get_rect()
+         self.speedy = -15
+         self.rect.bottom = y
+         self.rect.centerx = x
+    def update(self):
+        "Atualização da bomba"
+        self.rect.y += self.speedy
+        if self.rect.bottom < 0:
+            self.kill()
 class Game():
     def __init__(self, n_enemies=10):
         self.screen = pygame.display.set_mode((WIDTH,HEIGHT),pygame.RESIZABLE)
         pygame.display.set_caption("Space Game")
         pygame.display.set_icon(pygame.image.load(os.path.join(img_folder, "planet01b.png")))
         self.clock = pygame.time.Clock()
-    #grupos de sprites 
+        #grupos de sprites 
         self.all_sprites = pygame.sprite.Group()
         self.enemies = pygame.sprite.Group()
         self.bullets = pygame.sprite.Group()
-
+        self.n_enemies = n_enemies
         self.ship = Ship()
         self.all_sprites.add(self.ship)
+        self.score = 0
+        self.end = 0
         for i in range(n_enemies):
             e = Enemy()
             self.all_sprites.add(e)
             self.enemies.add(e)
-
-        self.background = load_img("bg2.png", WIDTH, HEIGHT)
+        self.background = load_img("bg.png", WIDTH, HEIGHT)
     def run(self):
-        while 1:
+        shot_speed = 0
+        while not self.end:
             self.clock.tick(FPS)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -125,30 +157,67 @@ class Game():
                     global WIDTH,HEIGHT
                     self.screen = pygame.display.set_mode(event.size,pygame.RESIZABLE)
                     WIDTH, HEIGHT = event.size
-                    self.background = load_img("bg2.png", WIDTH, HEIGHT)
+                    self.background = load_img("bg.png", WIDTH, HEIGHT)
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_SPACE:
-                        shoot = self.ship.shoot()
-                        self.all_sprites.add(shoot)
-                        self.bullets.add(shoot)
+                        # shoot = self.ship.shoot()
+                        # self.all_sprites.add(shoot)
+                        # self.bullets.add(shoot)
+                        self.all_sprites.add(self.ship.bomb())
+                        for enemy in self.enemies:
+                            self.score += 50
+                            enemy.kill()
+                        for i in range(self.n_enemies): #respanw
+                            e = Enemy()
+                            self.all_sprites.add(e)
+                            self.enemies.add(e)
+            
             #atualiza os sprites
+            if shot_speed % 10 == 0:
+                shoot = self.ship.shoot()
+                self.all_sprites.add(shoot)
+                self.bullets.add(shoot)
 
             self.all_sprites.update()
             self.collision()
             self.screen.blit(self.background,[0,0])
-
             self.all_sprites.draw(self.screen)
+            self.draw_text(f"score:{self.score}", 20, WIDTH/2, 10)
+            self.draw_text(f"Vidas:{self.ship.lifes}", 20, 50, 10)
+            shot_speed+=1
             pygame.display.update() #flip
+            self.game_over()
+    def game_over(self):
+        if self.end:
+            while 1:
+                self.screen.fill(BLACK)
+                self.draw_text(f"SCORE: {self.score}", 20, WIDTH/2, HEIGHT/2+50)
+                self.draw_text("GAME OVER", 50, WIDTH/2, HEIGHT/2)
+                pygame.display.update() #flip
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        sys.exit()
+
+            print("cabo")
     def collision(self):
         #colisão corpo a corpo inimigo-heroi
         # for enemy in self.enemies:
         if pygame.sprite.spritecollide(self.ship, self.enemies, False,False):
-            self.ship.damage()
+            self.ship.damage(self)
         hits = pygame.sprite.groupcollide(self.enemies, self.bullets,True, True)
         for hit in hits:
+            self.score += 50
             e = Enemy()
             self.all_sprites.add(e)
             self.enemies.add(e)
+    def draw_text( self, text, size, x, y):
+        font = pygame.font.Font(game_font, size)
+        # font = pygame.font.Font(pygame.font.match_font('arial'), size)
+        text_surface = font.render(text, True, WHITE)
+        text_rect = text_surface.get_rect()
+        text_rect.midtop = (x, y)
+        self.screen.blit(text_surface, text_rect)
 if __name__ ==  '__main__':
+    pygame.init()
     game = Game()
     game.run()
