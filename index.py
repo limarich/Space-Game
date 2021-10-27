@@ -37,6 +37,7 @@ class Ship(pygame.sprite.Sprite):
         self.rect.x, self.rect.y = WIDTH/2, HEIGHT-self.height
         self.speed = speed
         self.lifes = 3
+        self.missiles = 3
         self.last_update = pygame.time.get_ticks()
     def update(self):
         """
@@ -61,7 +62,6 @@ class Ship(pygame.sprite.Sprite):
         Ativa as ações de dano do jogador
         """
         self.lifes -= 1
-        print(f"dano-> suas vidas{self.lifes}")
         if self.lifes <= 0:
             self.kill()
             game.end =  1
@@ -159,18 +159,14 @@ class Game():
                     WIDTH, HEIGHT = event.size
                     self.background = load_img("bg.png", WIDTH, HEIGHT)
                 elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_SPACE:
-                        # shoot = self.ship.shoot()
-                        # self.all_sprites.add(shoot)
-                        # self.bullets.add(shoot)
+                    if event.key == pygame.K_SPACE and self.ship.missiles > 0:
+                        self.ship.missiles -=1
                         self.all_sprites.add(self.ship.bomb())
                         for enemy in self.enemies:
                             self.score += 50
                             enemy.kill()
                         for i in range(self.n_enemies): #respanw
-                            e = Enemy()
-                            self.all_sprites.add(e)
-                            self.enemies.add(e)
+                            self.respawn_enemy()
             
             #atualiza os sprites
             if shot_speed % 10 == 0:
@@ -184,6 +180,7 @@ class Game():
             self.all_sprites.draw(self.screen)
             self.draw_text(f"score:{self.score}", 20, WIDTH/2, 10)
             self.draw_text(f"Vidas:{self.ship.lifes}", 20, 50, 10)
+            self.draw_text(f"Misseis:{self.ship.missiles}", 20, 60, 40)
             shot_speed+=1
             pygame.display.update() #flip
             self.game_over()
@@ -197,8 +194,6 @@ class Game():
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
                         sys.exit()
-
-            print("cabo")
     def collision(self):
         #colisão corpo a corpo inimigo-heroi
         # for enemy in self.enemies:
@@ -207,9 +202,12 @@ class Game():
         hits = pygame.sprite.groupcollide(self.enemies, self.bullets,True, True)
         for hit in hits:
             self.score += 50
-            e = Enemy()
-            self.all_sprites.add(e)
-            self.enemies.add(e)
+            self.respawn_enemy()
+    def respawn_enemy(self):
+        """Cria um inimigo"""
+        e = Enemy()
+        self.all_sprites.add(e)
+        self.enemies.add(e)
     def draw_text( self, text, size, x, y):
         font = pygame.font.Font(game_font, size)
         # font = pygame.font.Font(pygame.font.match_font('arial'), size)
