@@ -1,10 +1,14 @@
+# Frozen Jam by tgfcoder <https://twitter.com/tgfcoder> licensed under CC-BY-3
+# Art from Kenney.nl
 import pygame,sys,os,random
-
 from pygame.constants import USEREVENT
+pygame.init()
+
 """carrega a pasta do jogo + arquivos"""
 game_folder = os.path.dirname(__file__)
 game_font = os.path.join(game_folder,'fonts') + '\stocky.ttf'
 img_folder = os.path.join(game_folder,'img')
+snd_dir = os.path.join(game_folder,'sounds')
 """Variáveis úteis"""
 WHITE = (255, 255, 255)
 RED   = (255, 0, 0)
@@ -15,6 +19,15 @@ GOLD = (255, 215, 0)
 FPS = 27
 WIDTH = 800
 HEIGHT = 600
+#sons
+def load_sound(name):
+    """carrega os audios da pasta do jogo"""
+    return pygame.mixer.Sound(os.path.join(snd_dir, name))
+shoot_sound =  load_sound("Laser_Shoot2.wav")
+Bomb_sound =  load_sound("Bomb.wav")
+expl_sound = [load_sound("Explosion1.wav"), load_sound("Explosion2.wav")]
+hurt_sound = load_sound("Hit_Hurt.wav")
+
 
 def load_img(name, width = 50,height=50):
     """
@@ -56,6 +69,7 @@ class Ship(pygame.sprite.Sprite):
         """
         Instancia de tiros do jogador
         """
+        shoot_sound.play()
         return Bullet(self.rect.centerx,self.rect.top)
     def damage(self, game):
         """
@@ -70,6 +84,7 @@ class Ship(pygame.sprite.Sprite):
         """
         cria animação da bomba e desconta o total de bombas do player
         """
+        Bomb_sound.play()
         return Bomb(self.rect.centerx,self.rect.top)
 class Enemy(pygame.sprite.Sprite):
     """Nave Inimiga padrão"""
@@ -127,6 +142,8 @@ class Bomb(pygame.sprite.Sprite):
         if self.rect.bottom < 0:
             self.kill()
 class Game():
+    pygame.mixer.music.load(os.path.join(snd_dir, 'tgfcoder-FrozenJam-SeamlessLoop.mp3'))
+    pygame.mixer.music.play(loops=-1)
     def __init__(self, n_enemies=10):
         self.screen = pygame.display.set_mode((WIDTH,HEIGHT),pygame.RESIZABLE)
         pygame.display.set_caption("Space Game")
@@ -174,6 +191,7 @@ class Game():
                 self.all_sprites.add(shoot)
                 self.bullets.add(shoot)
 
+
             self.all_sprites.update()
             self.collision()
             self.screen.blit(self.background,[0,0])
@@ -199,8 +217,10 @@ class Game():
         # for enemy in self.enemies:
         if pygame.sprite.spritecollide(self.ship, self.enemies, False,False):
             self.ship.damage(self)
+            hurt_sound.play()
         hits = pygame.sprite.groupcollide(self.enemies, self.bullets,True, True)
         for hit in hits:
+            random.choice(expl_sound).play()
             self.score += 50
             self.respawn_enemy()
     def respawn_enemy(self):
@@ -216,6 +236,6 @@ class Game():
         text_rect.midtop = (x, y)
         self.screen.blit(text_surface, text_rect)
 if __name__ ==  '__main__':
-    pygame.init()
+    # pygame.mixer.init()
     game = Game()
     game.run()
