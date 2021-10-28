@@ -16,6 +16,7 @@ RED   = (255, 0, 0)
 BLACK = (0, 0, 0)
 GREEN = (0, 255, 0)
 GOLD = (255, 215, 0)
+YELLOW = (255,255,0)
 
 FPS = 27
 WIDTH = 800
@@ -53,8 +54,8 @@ class Ship(pygame.sprite.Sprite):
     """
     def __init__(self, speed=[30,30]):
         pygame.sprite.Sprite.__init__(self)
-        self.image = load_img('player2.png',50,30)
-        self.image.set_colorkey(BLACK)
+        self.image = load_img('player3.gif',80,80)
+        self.image.set_colorkey(YELLOW)
         self.rect = self.image.get_rect()
         self.height = self.rect.height
         self.width = self.rect.width
@@ -103,8 +104,8 @@ class Enemy(pygame.sprite.Sprite):
     """Nave Inimiga padrão"""
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
-        self.image = load_img('alien.png')
-        self.image.set_colorkey(BLACK)
+        self.image = load_img('alien1.gif')
+        self.image.set_colorkey(YELLOW)
         self.rect = self.image.get_rect()
         self.radius = 25
         # pygame.draw.circle(self.image, RED, self.rect.center, self.radius)
@@ -143,8 +144,9 @@ class Bomb(pygame.sprite.Sprite):
     """
     def __init__(self,x,y):
          pygame.sprite.Sprite.__init__(self)
-         self.image = pygame.transform.rotate(load_img("missile_half.png"),90)
-         self.image.set_colorkey(WHITE)
+        #  self.image = pygame.transform.rotate(load_img("missile.gif"),90)
+         self.image = load_img("missile.gif", 40)
+         self.image.set_colorkey(YELLOW)
          self.rect = self.image.get_rect()
          self.speedy = -15
          self.rect.bottom = y
