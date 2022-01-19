@@ -45,6 +45,8 @@
 ```
     python index.py
 ```
+> talvez seja necessário instalar o pygame, para isso use o pip seguindo as intruções das documentações(links disponíveis na listagem acima)
+
 ##### _Aproveite bastante o jogo, e se possível deixe o seu feedback.😉_
 ---
 
