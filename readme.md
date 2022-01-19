@@ -3,8 +3,10 @@
 
 
 ### Sobre
-    Game inspirado nos sucessos de fliperama que fizeram parte da minha infância. Controle sua nave e derrote todos antes que sua nave seja destruida.
+    Game inspirado nos sucessos de fliperama que fizeram parte da minha infância.<br>
+    Controle sua nave e derrote todos antes que sua nave seja destruida.
 -----
+     <img src="https://github.com/limarich/Space-Game/blob/master/Anima%C3%A7%C3%A3o.gif" />
     
 ### Objetivos
 - construir um jogo com pygame 
